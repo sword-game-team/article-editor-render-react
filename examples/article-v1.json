@@ -1,0 +1,123 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 1,
+        "textAlign": "center"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article Content Protocol v1"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "This renderer supports "
+        },
+        {
+          "type": "text",
+          "text": "nested marks",
+          "marks": [
+            { "type": "bold" },
+            { "type": "italic" },
+            {
+              "type": "link",
+              "attrs": {
+                "href": "/details"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    {
+      "type": "blockquote",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [{ "type": "text", "text": "A semantic block quote." }]
+        }
+      ]
+    },
+    {
+      "type": "orderedList",
+      "attrs": { "start": 3 },
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "The third item." }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "codeBlock",
+      "attrs": { "language": "ts" },
+      "content": [{ "type": "text", "text": "const protocolVersion = 1" }]
+    },
+    {
+      "type": "image",
+      "attrs": {
+        "src": "/images/example.png",
+        "alt": "Example image",
+        "width": 800,
+        "height": 450,
+        "imageAlign": "center"
+      }
+    },
+    {
+      "type": "articleButton",
+      "attrs": {
+        "id": "product-42",
+        "title": "View product details",
+        "text": "View product",
+        "style": "button"
+      }
+    },
+    {
+      "type": "table",
+      "content": [
+        {
+          "type": "tableRow",
+          "content": [
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [{ "type": "text", "text": "A1" }]
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [{ "type": "text", "text": "B1" }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    { "type": "horizontalRule" }
+  ]
+}
+

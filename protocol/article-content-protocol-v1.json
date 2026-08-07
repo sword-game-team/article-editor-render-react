@@ -1,0 +1,939 @@
+{
+  "fileFormat": "article-content-protocol",
+  "fileFormatVersion": 1,
+  "mediaType": "application/vnd.article-content-protocol+json",
+  "id": "article-content-v1",
+  "version": 1,
+  "name": "Article Content Protocol v1",
+  "status": "draft",
+  "rootNode": "doc",
+  "nodes": [
+    {
+      "type": "doc",
+      "kind": "root",
+      "description": "Document root; render its children without adding a semantic element.",
+      "contentModel": "block*",
+      "attributes": [],
+      "render": {
+        "mode": "fragment"
+      }
+    },
+    {
+      "type": "paragraph",
+      "kind": "block",
+      "description": "A paragraph of inline text.",
+      "contentModel": "text*",
+      "attributes": [
+        {
+          "name": "textAlign",
+          "type": "string",
+          "required": false,
+          "description": "Block text alignment. When omitted, use the renderer's default alignment.",
+          "allowedValues": [
+            "left",
+            "center",
+            "right",
+            "justify"
+          ]
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "p",
+        "styleBindings": {
+          "textAlign": "text-align"
+        }
+      }
+    },
+    {
+      "type": "heading",
+      "kind": "block",
+      "description": "A semantic heading from h1 through h6.",
+      "contentModel": "text*",
+      "attributes": [
+        {
+          "name": "level",
+          "type": "integer",
+          "required": true,
+          "description": "Semantic heading level.",
+          "allowedValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "minimum": 1,
+          "maximum": 6
+        },
+        {
+          "name": "textAlign",
+          "type": "string",
+          "required": false,
+          "description": "Block text alignment. When omitted, use the renderer's default alignment.",
+          "allowedValues": [
+            "left",
+            "center",
+            "right",
+            "justify"
+          ]
+        }
+      ],
+      "render": {
+        "mode": "dynamic-element",
+        "attribute": "level",
+        "prefix": "h",
+        "allowedElements": [
+          "h1",
+          "h2",
+          "h3",
+          "h4",
+          "h5",
+          "h6"
+        ],
+        "styleBindings": {
+          "textAlign": "text-align"
+        }
+      }
+    },
+    {
+      "type": "blockquote",
+      "kind": "block",
+      "description": "A quoted group of block nodes.",
+      "contentModel": "block+",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "blockquote"
+      }
+    },
+    {
+      "type": "bulletList",
+      "kind": "block",
+      "description": "An unordered list.",
+      "contentModel": "listItem+",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "ul"
+      }
+    },
+    {
+      "type": "orderedList",
+      "kind": "block",
+      "description": "An ordered list with a one-based start value.",
+      "contentModel": "listItem+",
+      "attributes": [
+        {
+          "name": "start",
+          "type": "integer",
+          "required": true,
+          "description": "First visible list number.",
+          "defaultValue": 1,
+          "minimum": 1
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "ol",
+        "attributeBindings": {
+          "start": "start"
+        }
+      }
+    },
+    {
+      "type": "listItem",
+      "kind": "block",
+      "description": "A list item containing one or more block nodes.",
+      "contentModel": "block+",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "li"
+      }
+    },
+    {
+      "type": "codeBlock",
+      "kind": "block",
+      "description": "A preformatted code block with an optional language identifier.",
+      "contentModel": "text?",
+      "attributes": [
+        {
+          "name": "language",
+          "type": "string",
+          "required": false,
+          "description": "Lowercase language identifier used for syntax highlighting."
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "pre",
+        "contentElement": "code",
+        "attributeBindings": {
+          "language": "data-language"
+        }
+      }
+    },
+    {
+      "type": "horizontalRule",
+      "kind": "block",
+      "description": "A thematic break.",
+      "contentModel": "none",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "hr",
+        "void": true
+      }
+    },
+    {
+      "type": "image",
+      "kind": "block",
+      "description": "A block image with optional horizontal alignment in the article content column.",
+      "contentModel": "none",
+      "attributes": [
+        {
+          "name": "src",
+          "type": "string",
+          "required": true,
+          "description": "Image URL or relative path."
+        },
+        {
+          "name": "alt",
+          "type": "string",
+          "required": false,
+          "description": "Alternative text."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": false,
+          "description": "Optional image title."
+        },
+        {
+          "name": "width",
+          "type": "integer",
+          "required": false,
+          "description": "Intrinsic width in pixels.",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        {
+          "name": "height",
+          "type": "integer",
+          "required": false,
+          "description": "Intrinsic height in pixels.",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        {
+          "name": "imageAlign",
+          "type": "string",
+          "required": false,
+          "description": "Horizontal image alignment. Renderers must use a layout container; omission means center.",
+          "defaultValue": "center",
+          "allowedValues": [
+            "left",
+            "center",
+            "right"
+          ]
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "img",
+        "void": true,
+        "attributeBindings": {
+          "src": "src",
+          "alt": "alt",
+          "title": "title",
+          "width": "width",
+          "height": "height",
+          "imageAlign": "data-image-align"
+        }
+      }
+    },
+    {
+      "type": "articleButton",
+      "kind": "block",
+      "description": "An article action button identified by a business id and displayed with its text.",
+      "contentModel": "none",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "Business identifier used by the consuming application to handle the action."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": false,
+          "description": "Descriptive title or tooltip."
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "required": true,
+          "description": "Visible button text."
+        },
+        {
+          "name": "style",
+          "type": "string",
+          "required": true,
+          "description": "Controlled visual variant: text is rendered as a text-like action; button as a button-like action.",
+          "allowedValues": [
+            "text",
+            "button"
+          ]
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "button",
+        "textBinding": "text",
+        "attributeBindings": {
+          "id": "data-article-button-id",
+          "title": "title",
+          "style": "data-article-button-style"
+        }
+      }
+    },
+    {
+      "type": "table",
+      "kind": "table",
+      "description": "A basic semantic table without presentation attributes.",
+      "contentModel": "tableRow+",
+      "attributes": [],
+      "constraints": [
+        {
+          "name": "uniform-table-columns",
+          "description": "Every tableRow in the same table must contain the same number of tableCell nodes."
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "table"
+      }
+    },
+    {
+      "type": "tableRow",
+      "kind": "table",
+      "description": "A table row.",
+      "contentModel": "tableCell+",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "tr"
+      }
+    },
+    {
+      "type": "tableCell",
+      "kind": "table",
+      "description": "A table cell containing block nodes. v1 does not distinguish header cells.",
+      "contentModel": "block+",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "td"
+      }
+    },
+    {
+      "type": "text",
+      "kind": "inline",
+      "description": "A text leaf; escape its value before producing HTML.",
+      "contentModel": "none",
+      "attributes": [],
+      "render": {
+        "mode": "text"
+      }
+    }
+  ],
+  "marks": [
+    {
+      "type": "bold",
+      "description": "Strong importance.",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "strong"
+      }
+    },
+    {
+      "type": "italic",
+      "description": "Emphasized text.",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "em"
+      }
+    },
+    {
+      "type": "strike",
+      "description": "Deleted or no-longer-valid text.",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "s"
+      }
+    },
+    {
+      "type": "underline",
+      "description": "Underlined text.",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "u"
+      }
+    },
+    {
+      "type": "code",
+      "description": "Inline code.",
+      "attributes": [],
+      "render": {
+        "mode": "element",
+        "element": "code"
+      }
+    },
+    {
+      "type": "link",
+      "description": "A hyperlink. Renderers must validate and escape the URL.",
+      "attributes": [
+        {
+          "name": "href",
+          "type": "string",
+          "required": true,
+          "description": "Link destination."
+        },
+        {
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "description": "Browsing context.",
+          "defaultValue": "_blank",
+          "allowedValues": [
+            "_blank",
+            "_self"
+          ]
+        }
+      ],
+      "render": {
+        "mode": "element",
+        "element": "a",
+        "attributeBindings": {
+          "href": "href",
+          "target": "target"
+        }
+      }
+    }
+  ],
+  "documentSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "urn:article-content-protocol:v1",
+    "title": "Article Content Protocol v1",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "type",
+      "content"
+    ],
+    "properties": {
+      "type": {
+        "const": "doc"
+      },
+      "content": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/blockNode"
+        }
+      }
+    },
+    "definitions": {
+      "blockNode": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/paragraph"
+          },
+          {
+            "$ref": "#/definitions/heading"
+          },
+          {
+            "$ref": "#/definitions/blockquote"
+          },
+          {
+            "$ref": "#/definitions/bulletList"
+          },
+          {
+            "$ref": "#/definitions/orderedList"
+          },
+          {
+            "$ref": "#/definitions/codeBlock"
+          },
+          {
+            "$ref": "#/definitions/horizontalRule"
+          },
+          {
+            "$ref": "#/definitions/image"
+          },
+          {
+            "$ref": "#/definitions/articleButton"
+          },
+          {
+            "$ref": "#/definitions/table"
+          }
+        ]
+      },
+      "paragraph": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "paragraph"
+          },
+          "attrs": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "textAlign": {
+                "$ref": "#/definitions/textAlign"
+              }
+            }
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/text"
+            }
+          }
+        }
+      },
+      "heading": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "attrs"
+        ],
+        "properties": {
+          "type": {
+            "const": "heading"
+          },
+          "attrs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "level"
+            ],
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              },
+              "textAlign": {
+                "$ref": "#/definitions/textAlign"
+              }
+            }
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/text"
+            }
+          }
+        }
+      },
+      "blockquote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "blockquote"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/blockNode"
+            }
+          }
+        }
+      },
+      "bulletList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "bulletList"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/listItem"
+            }
+          }
+        }
+      },
+      "orderedList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "attrs",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "orderedList"
+          },
+          "attrs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/listItem"
+            }
+          }
+        }
+      },
+      "listItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "listItem"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/blockNode"
+            }
+          }
+        }
+      },
+      "codeBlock": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "attrs"
+        ],
+        "properties": {
+          "type": {
+            "const": "codeBlock"
+          },
+          "attrs": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "language": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              }
+            }
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "text"
+              ],
+              "properties": {
+                "type": {
+                  "const": "text"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "horizontalRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "horizontalRule"
+          }
+        }
+      },
+      "image": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "attrs"
+        ],
+        "properties": {
+          "type": {
+            "const": "image"
+          },
+          "attrs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "src"
+            ],
+            "properties": {
+              "src": {
+                "type": "string",
+                "minLength": 1
+              },
+              "alt": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "imageAlign": {
+                "$ref": "#/definitions/imageAlign"
+              }
+            }
+          }
+        }
+      },
+      "articleButton": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "attrs"
+        ],
+        "properties": {
+          "type": {
+            "const": "articleButton"
+          },
+          "attrs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "text",
+              "style"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "style": {
+                "enum": [
+                  "text",
+                  "button"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "table": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "table"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/tableRow"
+            }
+          }
+        }
+      },
+      "tableRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "tableRow"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/tableCell"
+            }
+          }
+        }
+      },
+      "tableCell": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "const": "tableCell"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/blockNode"
+            }
+          }
+        }
+      },
+      "text": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "text"
+        ],
+        "properties": {
+          "type": {
+            "const": "text"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "marks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/mark"
+            }
+          }
+        }
+      },
+      "textAlign": {
+        "type": "string",
+        "enum": [
+          "left",
+          "center",
+          "right",
+          "justify"
+        ]
+      },
+      "imageAlign": {
+        "type": "string",
+        "enum": [
+          "left",
+          "center",
+          "right"
+        ]
+      },
+      "mark": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "bold",
+                  "italic",
+                  "strike",
+                  "underline",
+                  "code"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "attrs"
+            ],
+            "properties": {
+              "type": {
+                "const": "link"
+              },
+              "attrs": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "href",
+                  "target"
+                ],
+                "properties": {
+                  "href": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "target": {
+                    "enum": [
+                      "_blank",
+                      "_self"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+
