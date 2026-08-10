@@ -1,6 +1,6 @@
 {
-  "name": "@nova_voyager/article-content-renderer-react",
-  "version": "0.1.0",
+  "name": "article-content-renderer-react",
+  "version": "0.1.7",
   "description": "A safe React renderer for the Article Content Protocol ProseMirror JSON format.",
   "author": "NovaVoyager",
   "license": "MIT",
@@ -14,11 +14,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/NovaVoyager/article-editor-render-react"
+    "url": "git+https://github.com/sword-game-team/article-editor-render-react.git"
   },
-  "homepage": "https://github.com/NovaVoyager/article-editor-render-react#readme",
+  "homepage": "https://github.com/sword-game-team/article-editor-render-react#readme",
   "bugs": {
-    "url": "https://github.com/NovaVoyager/article-editor-render-react/issues"
+    "url": "https://github.com/sword-game-team/article-editor-render-react/issues"
   },
   "publishConfig": {
     "access": "public",
@@ -62,12 +62,12 @@
   "devDependencies": {
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.1.0",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.6.0",
     "jsdom": "^26.1.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.9.2",
     "vite": "^7.0.6",
     "vitest": "^3.2.4"

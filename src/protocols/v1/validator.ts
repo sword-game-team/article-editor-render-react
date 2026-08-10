@@ -1,4 +1,4 @@
-import type { RenderIssue, ValidationResult } from '../../types'
+import type { RenderIssue, ValidationResult } from '../../types.js'
 
 type UnknownRecord = Record<string, unknown>
 

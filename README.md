@@ -16,6 +16,7 @@
 - 支持 React SSR
 - 提供 TypeScript 类型、结构化错误和 CSS Variables
 - React 和 React DOM 作为 peer dependencies，不会打入组件包
+- peer 版本范围同时允许 React/React DOM 18.2+ 和 19.x，应用会复用宿主项目的 React 实例
 
 ## 环境要求
 
@@ -26,13 +27,13 @@
 ## 安装
 
 ```bash
-npm install @nova_voyager/article-content-renderer-react react react-dom
+npm install article-content-renderer-react react react-dom
 ```
 
 引入组件样式：
 
 ```ts
-import '@nova_voyager/article-content-renderer-react/style.css'
+import 'article-content-renderer-react/style.css'
 ```
 
 ## 基本使用
@@ -45,8 +46,8 @@ import {
   type ArticleDocument,
   type RenderIssue,
   type ResolveArticleButtonLink,
-} from '@nova_voyager/article-content-renderer-react'
-import '@nova_voyager/article-content-renderer-react/style.css'
+} from 'article-content-renderer-react'
+import 'article-content-renderer-react/style.css'
 
 const article: ArticleDocument = {
   type: 'doc',
@@ -95,7 +96,7 @@ export function ArticlePage() {
 也可以使用默认导出：
 
 ```tsx
-import ArticleContentRenderer from '@nova_voyager/article-content-renderer-react'
+import ArticleContentRenderer from 'article-content-renderer-react'
 ```
 
 ## 广告参数（当前阶段）
@@ -104,9 +105,9 @@ import ArticleContentRenderer from '@nova_voyager/article-content-renderer-react
 
 ```ts
 interface AdConfig {
-  adm: readonly unknown[]
-  ads: readonly unknown[]
-  loc: readonly unknown[]
+  adm?: readonly unknown[]
+  ads?: readonly unknown[]
+  loc: readonly number[]
 }
 
 interface PubId {
@@ -117,14 +118,14 @@ interface PubId {
 
 ```tsx
 const adConf: AdConfig = {
-  adm: [{ id: 'adm-1' }],
-  ads: [{ id: 'ads-1' }],
-  loc: [],
+  adm: ['banner-1', 'banner-2'],
+  ads: ['123', '456'],
+  loc: [2, 5],
 }
 
 const pubid: PubId = {
-  adm: 'adm-publisher-id',
-  ads: 'ads-publisher-id',
+  adm: '/23054585162/newsflowly/',
+  ads: '3887371527059481',
 }
 
 <ArticleContentRenderer
@@ -135,24 +136,142 @@ const pubid: PubId = {
 />
 ```
 
-当前阶段组件会在参数变化后打印：
+组件会在 `document.content` 的第 2、5 个顶层元素前分别插入一个 `.acp-ad-slot` 占位节点。`loc` 使用从 1 开始的位置；如果对应元素不存在，该广告配置会被忽略。
+
+占位节点示例：
+
+```html
+<div
+  class="acp-ad-slot"
+  data-ad-slot="true"
+  data-ad-index="1"
+  data-ad-location="2"
+  data-adm="banner-1"
+  data-ads="123"
+></div>
+```
+
+当当前位置存在 `adConf.ads` 广告单元 ID，且 `pubid.ads` 不为空时，占位节点内部会渲染 Google AdSense：
+
+```html
+<div class="article-ad-wrapper" data-google-ad="true">
+  <div class="article-ad-title">Advertisement</div>
+  <ins
+    class="adsbygoogle article-ad-unit"
+    data-ad-client="ca-pub-3887371527059481"
+    data-ad-slot="123"
+  ></ins>
+</div>
+```
+
+`pubid.ads` 可以传 `3887371527059481` 或完整的 `ca-pub-3887371527059481`。组件会自动补齐缺少的 `ca-pub-` 前缀。宿主项目需要在页面中加载一次 Google AdSense SDK；组件不会为每个广告重复插入 `<script>`。
+
+广告样式不需要通过 React Props 传递，直接在使用方的 CSS 中覆盖固定类名：
+
+```css
+.article-ad-wrapper {
+  height: 100px;
+}
+
+.article-ad-title {
+  /* 可选：设置 Advertisement 标题样式 */
+}
+
+.article-ad-unit {
+  /* 可选：继续设置广告单元样式 */
+}
+```
+
+广告外层使用纵向 flex 布局，`.article-ad-title` 占用自身高度，`.article-ad-unit` 自动占满剩余高度。例如外层高度为 `110px`、标题行高为 `20px` 时，广告单元高度为 `90px`。
+
+`.article-ad-wrapper` 是广告外层容器，`.article-ad-unit` 是 AdSense `<ins>`。广告单元默认占满外层容器，因此设置外层高度即可生效。
+
+当当前位置存在 `adConf.adm` 时，会优先渲染 Google Ad Manager：
+
+```html
+<div
+  class="article-ad-wrapper article-adm-wrapper"
+  data-google-ad-manager="true"
+  data-ad-unit-path="/23054585162/newsflowly/banner-1"
+>
+  <div class="article-ad-title">Advertisement</div>
+  <div id="banner-1" class="article-ad-unit article-adm-unit"></div>
+</div>
+```
+
+`pubid.adm` 是广告单元路径前缀，`adConf.adm[index]` 同时作为路径末段和 GPT DOM ID。例如：
+
+```tsx
+<ArticleContentRenderer
+  document={article}
+  adConf={{
+    adm: ['banner-1'],
+    ads: ['123'],
+    loc: [2],
+  }}
+  pubid={{
+    adm: '/23054585162/newsflowly/',
+    ads: '3887371527059481',
+  }}
+/>
+```
+
+广告选择规则：
+
+- 同一位置同时有 `adm` 和 `ads`：先请求 ADM；仅当该 ADM 广告位返回空广告时，才请求对应的 AdSense。
+- 只有 `adm`：只请求 ADM，即使返回空广告也不会请求 AdSense。
+- 只有 `ads`：直接请求 AdSense。
+- ADM 返回了广告：保持 ADM，不请求 AdSense。
+
+ADM 和 AdSense 共用 `.article-ad-wrapper` 外层类名，因此下面的样式在优先展示 ADM 和回退到 AdSense 后都会保持生效：
+
+```css
+.article-ad-wrapper {
+  height: 100px;
+}
+
+.article-adm-wrapper {
+  /* 可选：仅覆盖 ADM 外层 */
+}
+
+.article-adm-unit {
+  width: 100%;
+  height: 100%;
+}
+```
+
+宿主项目需要加载一次 Google Publisher Tag SDK。组件通过 `googletag.cmd` 注册广告，不会为每个广告位动态插入脚本。
+
+组件也会在参数变化后打印：
 
 ```text
 [ArticleContentRenderer] adConf: ...
 [ArticleContentRenderer] pubid: ...
 ```
 
-当 `adConf.adm` 和 `adConf.ads` 都是非空数组时，两者长度必须相同。长度不同时会调用 `console.error`，并通过 `onRenderError` 上报：
+`adm` 和 `ads` 可以只提供一方，也可以同时提供。每个有数据的广告数组长度都必须与 `loc` 相同；两方都有数据时，三者长度必须相同。长度不匹配时不会生成广告占位节点，并会调用 `console.error`、通过 `onRenderError` 上报：
+
+```tsx
+// 只提供 adm
+const admOnly: AdConfig = {
+  adm: ['banner-1'],
+  loc: [2],
+}
+
+// 只提供 ads
+const adsOnly: AdConfig = {
+  ads: ['123'],
+  loc: [2],
+}
+```
 
 ```ts
 {
   code: 'AD_CONFIG_LENGTH_MISMATCH',
-  path: '/adConf/ads',
+  path: '/adConf',
   message: '...'
 }
 ```
-
-如果 `adm` 或 `ads` 其中一个为空数组，则现阶段不执行长度一致性校验。
 
 ## articleButton 链接
 
@@ -286,8 +405,10 @@ function ArticlePage() {
 | `document` | `unknown` | 必填 | Article Content Protocol 文档 |
 | `protocolVersion` | `number` | `1` | 协议适配器版本 |
 | `strict` | `boolean` | `false` | 校验失败时是否停止整篇正文渲染 |
-| `adConf` | `AdConfig` | `{ adm: [], ads: [], loc: [] }` | 广告配置；非空 `adm`/`ads` 长度必须一致 |
+| `adConf` | `AdConfig` | `{ adm: [], ads: [], loc: [] }` | 广告配置；`adm`/`ads` 可只提供一方，有数据的数组长度须与 `loc` 一致 |
 | `pubid` | `PubId` | `{ adm: '', ads: '' }` | adm/ads 发布标识 |
+| `adTitle` | `string` | `"Advertisement"` | 广告标题文案，ADM 和 AdSense 共用 |
+| `imageBaseUrl` | `string` | `"https://www.doitme.link/"` | 替换文档图片中默认的 `https://www.doitme.link/` 地址前缀 |
 | `resolveArticleButtonLink` | `ResolveArticleButtonLink` | `undefined` | 生成 `articleButton` 完整安全链接 |
 | `onArticleButtonClick` | `(payload) => void` | `undefined` | 点击 button/text 形式的 `articleButton` 时调用 |
 | `onRenderError` | `(issue) => void` | `undefined` | 协议或运行时渲染问题回调 |
@@ -348,7 +469,7 @@ interface RenderIssue {
 可以在组件之外单独校验：
 
 ```ts
-import { validateArticleDocument } from '@nova_voyager/article-content-renderer-react'
+import { validateArticleDocument } from 'article-content-renderer-react'
 
 const result = validateArticleDocument(article, { protocolVersion: 1 })
 if (!result.valid) console.table(result.issues)
@@ -413,7 +534,7 @@ React 版本使用 Fragment 输出协议根节点，不会额外生成 `.acp-doc
 
 ```tsx
 import { renderToString } from 'react-dom/server'
-import { ArticleContentRenderer } from '@nova_voyager/article-content-renderer-react'
+import { ArticleContentRenderer } from 'article-content-renderer-react'
 
 const html = renderToString(
   <ArticleContentRenderer

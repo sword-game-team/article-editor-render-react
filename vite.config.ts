@@ -18,7 +18,7 @@ export default defineConfig({
       cssFileName: 'article-content-renderer-react',
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
       output: {
         exports: 'named',
         globals: {

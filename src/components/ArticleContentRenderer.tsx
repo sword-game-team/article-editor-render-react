@@ -1,16 +1,18 @@
-import { createElement, useEffect, useRef, type ReactNode } from 'react'
+import { createElement, useEffect, useRef, type ReactElement } from 'react'
 import {
   CURRENT_PROTOCOL_VERSION,
   getProtocolAdapter,
   validateArticleDocument,
-} from '../protocols/registry'
+} from '../protocols/registry.js'
 import type {
   AdConfig,
   ArticleButtonClickPayload,
   PubId,
   RenderIssue,
   ResolveArticleButtonLink,
-} from '../types'
+} from '../types.js'
+import type { AdSlot } from '../protocols/types.js'
+import { DEFAULT_IMAGE_BASE_URL } from '../core/url.js'
 
 const EMPTY_AD_CONF: AdConfig = Object.freeze({
   adm: Object.freeze([]),
@@ -23,12 +25,16 @@ const EMPTY_PUBID: PubId = Object.freeze({
   ads: '',
 })
 
+const DEFAULT_AD_TITLE = 'Advertisement'
+
 export interface ArticleContentRendererProps {
   document: unknown
   protocolVersion?: number
   strict?: boolean
   adConf?: AdConfig
   pubid?: PubId
+  adTitle?: string
+  imageBaseUrl?: string
   resolveArticleButtonLink?: ResolveArticleButtonLink
   onArticleButtonClick?: (payload: ArticleButtonClickPayload) => void
   onRenderError?: (issue: RenderIssue) => void
@@ -43,16 +49,35 @@ function issueFingerprint(issues: readonly RenderIssue[]): string {
 }
 
 function validateAdConfig(adConf: AdConfig): RenderIssue | null {
-  const admHasValues = adConf.adm.length > 0
-  const adsHasValues = adConf.ads.length > 0
+  const admLength = adConf.adm?.length ?? 0
+  const adsLength = adConf.ads?.length ?? 0
+  const locLength = adConf.loc.length
+  const admMatches = admLength === 0 || admLength === locLength
+  const adsMatches = adsLength === 0 || adsLength === locLength
+  const hasAdValues = admLength > 0 || adsLength > 0
 
-  if (!admHasValues || !adsHasValues || adConf.adm.length === adConf.ads.length) return null
+  if ((locLength === 0 && !hasAdValues) || (hasAdValues && admMatches && adsMatches)) {
+    return null
+  }
 
   return {
     code: 'AD_CONFIG_LENGTH_MISMATCH',
-    path: '/adConf/ads',
-    message: `adConf.adm and adConf.ads must have the same length when both arrays contain values. Received adm length ${adConf.adm.length} and ads length ${adConf.ads.length}.`,
+    path: '/adConf',
+    message: `Each non-empty adConf.adm or adConf.ads array must have the same length as adConf.loc, and at least one ad array must contain values when loc is non-empty. Received adm length ${admLength}, ads length ${adsLength}, and loc length ${locLength}.`,
   }
+}
+
+function createAdSlots(adConf: AdConfig, issue: RenderIssue | null): readonly AdSlot[] {
+  if (issue) return []
+
+  return adConf.loc
+    .map((location, index) => ({
+      index: index + 1,
+      location,
+      adm: adConf.adm?.[index],
+      ads: adConf.ads?.[index],
+    }))
+    .filter((slot) => Number.isInteger(slot.location) && slot.location >= 1)
 }
 
 export function ArticleContentRenderer({
@@ -61,30 +86,49 @@ export function ArticleContentRenderer({
   strict = false,
   adConf = EMPTY_AD_CONF,
   pubid = EMPTY_PUBID,
+  adTitle = DEFAULT_AD_TITLE,
+  imageBaseUrl = DEFAULT_IMAGE_BASE_URL,
   resolveArticleButtonLink,
   onArticleButtonClick,
   onRenderError,
-}: ArticleContentRendererProps): ReactNode {
+}: ArticleContentRendererProps): ReactElement | null {
   const validation = validateArticleDocument(document, { protocolVersion })
   const adapter = getProtocolAdapter(protocolVersion)
   const runtimeIssues: RenderIssue[] = []
   const reportedRuntimeIssues = useRef(new Set<string>())
   const reportedAdConfigIssue = useRef<string | null>(null)
-  const runtimeIssueContext = useRef({ document, protocolVersion, resolveArticleButtonLink })
+  const runtimeIssueContext = useRef({
+    document,
+    protocolVersion,
+    resolveArticleButtonLink,
+    imageBaseUrl,
+  })
   const adConfigIssue = validateAdConfig(adConf)
+  const adSlots = createAdSlots(adConf, adConfigIssue)
 
   if (
     runtimeIssueContext.current.document !== document ||
     runtimeIssueContext.current.protocolVersion !== protocolVersion ||
-    runtimeIssueContext.current.resolveArticleButtonLink !== resolveArticleButtonLink
+    runtimeIssueContext.current.resolveArticleButtonLink !== resolveArticleButtonLink ||
+    runtimeIssueContext.current.imageBaseUrl !== imageBaseUrl
   ) {
     reportedRuntimeIssues.current.clear()
-    runtimeIssueContext.current = { document, protocolVersion, resolveArticleButtonLink }
+    runtimeIssueContext.current = {
+      document,
+      protocolVersion,
+      resolveArticleButtonLink,
+      imageBaseUrl,
+    }
   }
 
   const canRender = Boolean(adapter) && (!strict || validation.valid)
   const rendered = canRender
     ? adapter?.render(document, {
+        adSlots,
+        admPublisherId: pubid.adm,
+        adsPublisherId: pubid.ads,
+        adTitle,
+        imageBaseUrl,
         resolveArticleButtonLink,
         emitArticleButtonClick: (payload) => onArticleButtonClick?.(payload),
         reportIssue: (issue) => runtimeIssues.push(issue),
@@ -139,7 +183,7 @@ export function ArticleContentRenderer({
     )
   }
 
-  return rendered
+  return rendered ?? null
 }
 
 export default ArticleContentRenderer

@@ -3,15 +3,15 @@ import './styles.css'
 export {
   ArticleContentRenderer,
   type ArticleContentRendererProps,
-} from './components/ArticleContentRenderer'
-export { default } from './components/ArticleContentRenderer'
+} from './components/ArticleContentRenderer.js'
+export { default } from './components/ArticleContentRenderer.js'
 
 export {
   CURRENT_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
   validateArticleDocument,
-} from './protocols/registry'
-export { ARTICLE_CONTENT_PROTOCOL_V1 } from './protocols/v1/metadata'
+} from './protocols/registry.js'
+export { ARTICLE_CONTENT_PROTOCOL_V1 } from './protocols/v1/metadata.js'
 export type {
   AdConfig,
   ArticleButtonAttrs,
@@ -53,4 +53,4 @@ export type {
   TextNode,
   UnderlineMark,
   ValidationResult,
-} from './types'
+} from './types.js'

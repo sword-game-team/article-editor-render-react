@@ -1,7 +1,7 @@
-import type { RenderIssue, ValidationResult } from '../types'
-import type { ProtocolAdapter } from './types'
-import { renderDocumentV1 } from './v1/renderer'
-import { validateDocumentV1 } from './v1/validator'
+import type { RenderIssue, ValidationResult } from '../types.js'
+import type { ProtocolAdapter } from './types.js'
+import { renderDocumentV1 } from './v1/renderer.js'
+import { validateDocumentV1 } from './v1/validator.js'
 
 const V1_ADAPTER: ProtocolAdapter = Object.freeze({
   version: 1,

@@ -8,9 +8,9 @@ export type ArticleButtonStyle = 'text' | 'button'
 export type LinkTarget = '_blank' | '_self'
 
 export interface AdConfig {
-  adm: readonly unknown[]
-  ads: readonly unknown[]
-  loc: readonly unknown[]
+  adm?: readonly unknown[]
+  ads?: readonly unknown[]
+  loc: readonly number[]
 }
 
 export interface PubId {
