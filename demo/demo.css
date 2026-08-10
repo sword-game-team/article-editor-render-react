@@ -435,12 +435,76 @@ input[type="checkbox"] {
   box-shadow: 0 18px 46px rgb(51 68 86 / 12%);
 }
 
-.demo-render-surface .acp-article-button--button {
-  min-width: 168px;
+.demo-render-surface .acp-article-button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 58px;
+  margin-block: 0 4px;
+  padding: 12px 16px 12px 18px;
+  border: 1px solid #8db3ff;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgb(16 24 40 / 10%);
+  color: #0758f9;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     "Microsoft YaHei", sans-serif;
-  font-weight: 750;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: start;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.demo-render-surface .acp-article-button::after {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  content: "→";
+  color: #70a0ff;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.demo-render-surface .acp-article-button:hover {
+  border-color: #4e89ff;
+  background: #f8fbff;
+  color: #0049df;
+}
+
+.demo-render-surface .acp-article-button:focus-visible {
+  outline: 3px solid rgb(7 88 249 / 22%);
+  outline-offset: 2px;
+}
+
+.demo-render-surface .acp-article-button--disabled {
+  border-color: #dfe3e8;
+  background: #fff;
+  color: #0758f9;
+  opacity: 1;
+}
+
+.demo-render-surface .acp-article-button--disabled::after {
+  color: #aab4c2;
+}
+
+.demo-render-surface .acp-article-button--disabled {
+  cursor: not-allowed;
+}
+
+.demo-render-surface .acp-article-button--disabled:hover {
+  border-color: #dfe3e8;
+  background: #fff;
+  color: #0758f9;
 }
 
 .demo-render-surface .acp-table {
@@ -509,4 +573,3 @@ input[type="checkbox"] {
     padding: 24px 18px;
   }
 }
-
