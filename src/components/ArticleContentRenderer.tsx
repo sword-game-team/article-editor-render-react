@@ -5,15 +5,30 @@ import {
   validateArticleDocument,
 } from '../protocols/registry'
 import type {
+  AdConfig,
   ArticleButtonClickPayload,
+  PubId,
   RenderIssue,
   ResolveArticleButtonLink,
 } from '../types'
+
+const EMPTY_AD_CONF: AdConfig = Object.freeze({
+  adm: Object.freeze([]),
+  ads: Object.freeze([]),
+  loc: Object.freeze([]),
+})
+
+const EMPTY_PUBID: PubId = Object.freeze({
+  adm: '',
+  ads: '',
+})
 
 export interface ArticleContentRendererProps {
   document: unknown
   protocolVersion?: number
   strict?: boolean
+  adConf?: AdConfig
+  pubid?: PubId
   resolveArticleButtonLink?: ResolveArticleButtonLink
   onArticleButtonClick?: (payload: ArticleButtonClickPayload) => void
   onRenderError?: (issue: RenderIssue) => void
@@ -27,10 +42,25 @@ function issueFingerprint(issues: readonly RenderIssue[]): string {
   return issues.map(issueKey).join('\n')
 }
 
+function validateAdConfig(adConf: AdConfig): RenderIssue | null {
+  const admHasValues = adConf.adm.length > 0
+  const adsHasValues = adConf.ads.length > 0
+
+  if (!admHasValues || !adsHasValues || adConf.adm.length === adConf.ads.length) return null
+
+  return {
+    code: 'AD_CONFIG_LENGTH_MISMATCH',
+    path: '/adConf/ads',
+    message: `adConf.adm and adConf.ads must have the same length when both arrays contain values. Received adm length ${adConf.adm.length} and ads length ${adConf.ads.length}.`,
+  }
+}
+
 export function ArticleContentRenderer({
   document,
   protocolVersion = CURRENT_PROTOCOL_VERSION,
   strict = false,
+  adConf = EMPTY_AD_CONF,
+  pubid = EMPTY_PUBID,
   resolveArticleButtonLink,
   onArticleButtonClick,
   onRenderError,
@@ -39,7 +69,9 @@ export function ArticleContentRenderer({
   const adapter = getProtocolAdapter(protocolVersion)
   const runtimeIssues: RenderIssue[] = []
   const reportedRuntimeIssues = useRef(new Set<string>())
+  const reportedAdConfigIssue = useRef<string | null>(null)
   const runtimeIssueContext = useRef({ document, protocolVersion, resolveArticleButtonLink })
+  const adConfigIssue = validateAdConfig(adConf)
 
   if (
     runtimeIssueContext.current.document !== document ||
@@ -61,6 +93,24 @@ export function ArticleContentRenderer({
 
   const validationIssuesKey = issueFingerprint(validation.issues)
   const runtimeIssuesKey = issueFingerprint(runtimeIssues)
+  const adConfigIssueKey = adConfigIssue ? issueKey(adConfigIssue) : ''
+
+  useEffect(() => {
+    console.log('[ArticleContentRenderer] adConf:', adConf)
+    console.log('[ArticleContentRenderer] pubid:', pubid)
+  }, [adConf, pubid])
+
+  useEffect(() => {
+    if (!adConfigIssue) {
+      reportedAdConfigIssue.current = null
+      return
+    }
+    if (reportedAdConfigIssue.current === adConfigIssueKey) return
+
+    reportedAdConfigIssue.current = adConfigIssueKey
+    console.error('[ArticleContentRenderer] Invalid adConf:', adConfigIssue)
+    onRenderError?.(adConfigIssue)
+  }, [adConfigIssueKey, onRenderError])
 
   useEffect(() => {
     if (!onRenderError) return

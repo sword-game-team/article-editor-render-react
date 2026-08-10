@@ -13,6 +13,7 @@ export {
 } from './protocols/registry'
 export { ARTICLE_CONTENT_PROTOCOL_V1 } from './protocols/v1/metadata'
 export type {
+  AdConfig,
   ArticleButtonAttrs,
   ArticleButtonClickPayload,
   ArticleButtonLink,
@@ -40,6 +41,7 @@ export type {
   OrderedListNode,
   ParagraphNode,
   ProtocolVersion,
+  PubId,
   RenderIssue,
   RenderIssueCode,
   ResolveArticleButtonLink,

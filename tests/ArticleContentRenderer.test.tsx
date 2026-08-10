@@ -2,7 +2,7 @@
 
 import { fireEvent, render } from '@testing-library/react'
 import { StrictMode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ArticleContentRenderer, {
   type ArticleButtonClickPayload,
   type ArticleButtonNode,
@@ -99,7 +99,82 @@ const completeDocument: ArticleDocument = {
   ],
 }
 
+beforeEach(() => {
+  vi.spyOn(console, 'log').mockImplementation(() => undefined)
+  vi.spyOn(console, 'error').mockImplementation(() => undefined)
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 describe('ArticleContentRenderer', () => {
+  it('receives and prints adConf and pubid', () => {
+    const adConf = {
+      adm: [{ id: 'adm-1' }],
+      ads: [{ id: 'ads-1' }],
+      loc: [{ id: 'loc-1' }],
+    }
+    const pubid = { adm: 'publisher-adm', ads: 'publisher-ads' }
+
+    render(
+      <ArticleContentRenderer
+        document={{ type: 'doc', content: [] }}
+        adConf={adConf}
+        pubid={pubid}
+      />,
+    )
+
+    expect(console.log).toHaveBeenCalledWith('[ArticleContentRenderer] adConf:', adConf)
+    expect(console.log).toHaveBeenCalledWith('[ArticleContentRenderer] pubid:', pubid)
+  })
+
+  it('reports an error when non-empty adConf adm and ads arrays have different lengths', () => {
+    const onRenderError = vi.fn<(issue: RenderIssue) => void>()
+
+    render(
+      <ArticleContentRenderer
+        document={{ type: 'doc', content: [] }}
+        adConf={{ adm: ['adm-1', 'adm-2'], ads: ['ads-1'], loc: [] }}
+        pubid={{ adm: '', ads: '' }}
+        onRenderError={onRenderError}
+      />,
+    )
+
+    const issue = expect.objectContaining({
+      code: 'AD_CONFIG_LENGTH_MISMATCH',
+      path: '/adConf/ads',
+    })
+    expect(onRenderError).toHaveBeenCalledWith(issue)
+    expect(console.error).toHaveBeenCalledWith(
+      '[ArticleContentRenderer] Invalid adConf:',
+      issue,
+    )
+  })
+
+  it('does not report a length error when one ad array is empty or both lengths match', () => {
+    const onRenderError = vi.fn<(issue: RenderIssue) => void>()
+    const { rerender } = render(
+      <ArticleContentRenderer
+        document={{ type: 'doc', content: [] }}
+        adConf={{ adm: ['adm-1'], ads: [], loc: [] }}
+        onRenderError={onRenderError}
+      />,
+    )
+
+    rerender(
+      <ArticleContentRenderer
+        document={{ type: 'doc', content: [] }}
+        adConf={{ adm: ['adm-1'], ads: ['ads-1'], loc: [] }}
+        onRenderError={onRenderError}
+      />,
+    )
+
+    expect(
+      onRenderError.mock.calls.some(([issue]) => issue.code === 'AD_CONFIG_LENGTH_MISMATCH'),
+    ).toBe(false)
+  })
+
   it('renders every v1 node family and nested marks as semantic elements', () => {
     const { container } = render(
       <ArticleContentRenderer

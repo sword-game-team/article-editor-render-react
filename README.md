@@ -98,6 +98,62 @@ export function ArticlePage() {
 import ArticleContentRenderer from '@nova_voyager/article-content-renderer-react'
 ```
 
+## 广告参数（当前阶段）
+
+组件接收 `adConf` 和 `pubid` 两个可选参数；省略时分别使用下面的空结构：
+
+```ts
+interface AdConfig {
+  adm: readonly unknown[]
+  ads: readonly unknown[]
+  loc: readonly unknown[]
+}
+
+interface PubId {
+  adm: string
+  ads: string
+}
+```
+
+```tsx
+const adConf: AdConfig = {
+  adm: [{ id: 'adm-1' }],
+  ads: [{ id: 'ads-1' }],
+  loc: [],
+}
+
+const pubid: PubId = {
+  adm: 'adm-publisher-id',
+  ads: 'ads-publisher-id',
+}
+
+<ArticleContentRenderer
+  document={article}
+  adConf={adConf}
+  pubid={pubid}
+  onRenderError={handleRenderError}
+/>
+```
+
+当前阶段组件会在参数变化后打印：
+
+```text
+[ArticleContentRenderer] adConf: ...
+[ArticleContentRenderer] pubid: ...
+```
+
+当 `adConf.adm` 和 `adConf.ads` 都是非空数组时，两者长度必须相同。长度不同时会调用 `console.error`，并通过 `onRenderError` 上报：
+
+```ts
+{
+  code: 'AD_CONFIG_LENGTH_MISMATCH',
+  path: '/adConf/ads',
+  message: '...'
+}
+```
+
+如果 `adm` 或 `ads` 其中一个为空数组，则现阶段不执行长度一致性校验。
+
 ## articleButton 链接
 
 `style: "button"` 和 `style: "text"` 都使用 `<a>` 渲染，只改变视觉样式。resolver 会收到当前节点的完整只读属性：
@@ -230,6 +286,8 @@ function ArticlePage() {
 | `document` | `unknown` | 必填 | Article Content Protocol 文档 |
 | `protocolVersion` | `number` | `1` | 协议适配器版本 |
 | `strict` | `boolean` | `false` | 校验失败时是否停止整篇正文渲染 |
+| `adConf` | `AdConfig` | `{ adm: [], ads: [], loc: [] }` | 广告配置；非空 `adm`/`ads` 长度必须一致 |
+| `pubid` | `PubId` | `{ adm: '', ads: '' }` | adm/ads 发布标识 |
 | `resolveArticleButtonLink` | `ResolveArticleButtonLink` | `undefined` | 生成 `articleButton` 完整安全链接 |
 | `onArticleButtonClick` | `(payload) => void` | `undefined` | 点击 button/text 形式的 `articleButton` 时调用 |
 | `onRenderError` | `(issue) => void` | `undefined` | 协议或运行时渲染问题回调 |
@@ -260,7 +318,7 @@ interface RenderIssue {
 }
 ```
 
-校验问题和渲染时问题会在组件提交后通过回调报告。React 开发环境的 Strict Mode 可能重复执行 render，但组件会对同一轮运行时问题去重；使用方也可以按 `code + path + message` 去重保存。
+协议校验问题、广告参数问题和渲染时问题会在组件提交后通过回调报告。React 开发环境的 Strict Mode 可能重复执行 render，但组件会对同一轮运行时问题去重；使用方也可以按 `code + path + message` 去重保存。
 
 ## 严格模式与容错模式
 

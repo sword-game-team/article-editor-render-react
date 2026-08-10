@@ -7,6 +7,17 @@ export type ImageAlign = 'left' | 'center' | 'right'
 export type ArticleButtonStyle = 'text' | 'button'
 export type LinkTarget = '_blank' | '_self'
 
+export interface AdConfig {
+  adm: readonly unknown[]
+  ads: readonly unknown[]
+  loc: readonly unknown[]
+}
+
+export interface PubId {
+  adm: string
+  ads: string
+}
+
 export interface BoldMark {
   type: 'bold'
 }
@@ -184,6 +195,7 @@ export type ResolveArticleButtonLink = (
 ) => ArticleButtonLink
 
 export type RenderIssueCode =
+  | 'AD_CONFIG_LENGTH_MISMATCH'
   | 'INVALID_ROOT'
   | 'INVALID_TYPE'
   | 'INVALID_CONTENT'
