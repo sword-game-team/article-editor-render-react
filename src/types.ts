@@ -1,4 +1,4 @@
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 
 export type ProtocolVersion = 1
 
@@ -7,15 +7,10 @@ export type ImageAlign = 'left' | 'center' | 'right'
 export type ArticleButtonStyle = 'text' | 'button'
 export type LinkTarget = '_blank' | '_self'
 
-export interface AdConfig {
-  adm?: readonly unknown[]
-  ads?: readonly unknown[]
-  loc: readonly number[]
-}
-
-export interface PubId {
-  adm: string
-  ads: string
+export interface CustomSlot {
+  id: string
+  location: number
+  content: ReactNode
 }
 
 export interface BoldMark {
@@ -195,7 +190,6 @@ export type ResolveArticleButtonLink = (
 ) => ArticleButtonLink
 
 export type RenderIssueCode =
-  | 'AD_CONFIG_LENGTH_MISMATCH'
   | 'INVALID_ROOT'
   | 'INVALID_TYPE'
   | 'INVALID_CONTENT'

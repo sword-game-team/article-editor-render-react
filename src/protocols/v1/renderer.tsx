@@ -9,16 +9,14 @@ import type {
   ArticleButtonAttrs,
   ArticleButtonLinkDescriptor,
   ArticleButtonNode,
+  CustomSlot,
   ImageAlign,
   LinkTarget,
   RenderIssue,
   TextAlign,
 } from '../../types.js'
-import { AdSenseAd } from '../../components/AdSenseAd.js'
-import { AdManagerAd } from '../../components/AdManagerAd.js'
 import { replaceImageBaseUrl, sanitizeUrl, secureRel } from '../../core/url.js'
 import type { RenderContext } from '../types.js'
-import type { AdSlot } from '../types.js'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -439,52 +437,22 @@ function renderBlockContent(value: unknown, path: string, context: RenderContext
     .filter((child): child is Exclude<ReactNode, null> => child !== null)
 }
 
-function adDataAttribute(value: unknown): string | number | undefined {
-  return typeof value === 'string' || typeof value === 'number' ? value : undefined
-}
-
-function renderAdSlot(slot: AdSlot, context: RenderContext): ReactNode {
-  const admSlotId = adDataAttribute(slot.adm)
-  const adsSlotId = adDataAttribute(slot.ads)
-  const renderedAd =
-    admSlotId !== undefined && context.admPublisherId
-      ? createElement(AdManagerAd, {
-          publisherId: context.admPublisherId,
-          slotId: admSlotId,
-          title: context.adTitle,
-          fallbackPublisherId: adsSlotId !== undefined ? context.adsPublisherId : undefined,
-          fallbackSlotId: adsSlotId,
-        })
-      : adsSlotId !== undefined && context.adsPublisherId
-        ? createElement(AdSenseAd, {
-            publisherId: context.adsPublisherId,
-            slotId: adsSlotId,
-            title: context.adTitle,
-          })
-        : null
-
-  return createElement(
-    'div',
-    {
-      key: `/adConf/${slot.index}`,
-      className: 'acp-ad-slot',
-      'data-node-type': 'adSlot',
-      'data-ad-slot': 'true',
-      'data-ad-index': slot.index,
-      'data-ad-location': slot.location,
-      'data-adm': admSlotId,
-      'data-ads': adsSlotId,
-    },
-    renderedAd,
-  )
+function renderCustomSlot(slot: CustomSlot): ReactNode {
+  return createElement(Fragment, { key: `/customSlots/${slot.id}` }, slot.content)
 }
 
 function renderDocumentContent(value: unknown, context: RenderContext): ReactNode[] {
   const content = arrayValue(value)
-  const slotsByLocation = new Map<number, AdSlot[]>()
+  const slotsByLocation = new Map<number, CustomSlot[]>()
 
-  context.adSlots.forEach((slot) => {
-    if (slot.location > content.length) return
+  context.customSlots.forEach((slot) => {
+    if (
+      !Number.isInteger(slot.location) ||
+      slot.location < 1 ||
+      slot.location > content.length
+    ) {
+      return
+    }
     const slots = slotsByLocation.get(slot.location) ?? []
     slots.push(slot)
     slotsByLocation.set(slot.location, slots)
@@ -493,9 +461,7 @@ function renderDocumentContent(value: unknown, context: RenderContext): ReactNod
   return content.flatMap((child, index) => {
     const path = childPath('/content', index)
     const renderedBlock = renderBlock(child, path, context)
-    const renderedSlots = (slotsByLocation.get(index + 1) ?? []).map((slot) =>
-      renderAdSlot(slot, context),
-    )
+    const renderedSlots = (slotsByLocation.get(index + 1) ?? []).map(renderCustomSlot)
     return renderedBlock === null ? renderedSlots : [...renderedSlots, renderedBlock]
   })
 }

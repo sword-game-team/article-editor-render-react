@@ -413,6 +413,16 @@ input[type="checkbox"] {
   line-height: 1.75;
 }
 
+.demo-custom-slot {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px dashed #8eb7d8;
+  border-radius: 10px;
+  background: #f1f8fd;
+  color: #1769aa;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
 .demo-render-surface .acp-heading {
   color: #17212f;
   font-family:
