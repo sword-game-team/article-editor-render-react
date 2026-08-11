@@ -1,15 +1,14 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
   ArticleContentRenderer,
-  type AdConfig,
   type ArticleButtonAttrs,
   type ArticleButtonClickPayload,
   type ArticleButtonLink,
   type ArticleButtonNode,
   type ArticleDocument,
+  type CustomSlot,
   type RenderIssue,
   type ResolveArticleButtonLink,
-  type PubId,
 } from '../src'
 
 const DEFAULT_RESOLVER_CODE = [
@@ -236,16 +235,13 @@ function compileResolver(source: string): ExecutableResolver {
 // }
 const article: ArticleDocument = {"type": "doc", "content": [{"type": "paragraph", "attrs": {"textAlign": "center"}, "content": [{"text": "How to choose between ROBLOX and Minecraft?", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "In the world of online gaming, two names stand out: Minecraft and ROBLOX. Both games offer players the chance to build, create, and explore in a virtual world, but there are some key differences between the two that set them apart.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "Minecraft, first released in 2011, is a sandbox game that allows players to explore and create their own worlds. The game has sold over 200 million copies worldwide and has become a cultural phenomenon. Players start out in a randomly generated world and must gather resources, build structures, and survive against monsters that come out at night.", "type": "text"}]}, {"type": "image", "attrs": {"src": "https://asserts.gameseeks.com/images/news/131/a6008cb8e51197dc92347b0a0b92cfbe.jpg", "imageAlign": "center"}}, {"type": "paragraph", "content": [{"text": "ROBLOX, on the other hand, is a platform that allows players to create their own games and experiences. It was first released in 2006 and has since grown to become one of the most popular online gaming platforms in the world. Players can create games using the platform's scripting language, and then share them with others to play.", "type": "text"}]}, {"type": "image", "attrs": {"src": "https://asserts.gameseeks.com/images/news/131/62d49705b8ecc4037e68ce4622ac5f70.jpg", "imageAlign": "center"}}, {"type": "paragraph", "content": [{"text": "One of the key differences between Minecraft and ROBLOX is the level of creative freedom they offer. In Minecraft, players have almost unlimited creative freedom to build and explore. They can create their own structures, mine resources, and explore a vast, randomly generated world. The game's open-ended nature allows players to build anything from simple houses to complex redstone contraptions.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "ROBLOX, on the other hand, is more limited in terms of creative freedom. While players can create their own games and experiences, they are restricted by the platform's scripting language and tools. This means that while players can create their own games, they are limited to the tools and assets provided by the platform.", "type": "text"}]}, {"type": "image", "attrs": {"src": "https://asserts.gameseeks.com/images/news/131/32d8a2a645843c6b60a97f543c69d925.jpg", "imageAlign": "center"}}, {"type": "paragraph", "content": [{"text": "Another key difference between the two games is the type of gameplay they offer. Minecraft is primarily a survival game, with players needing to gather resources and build structures to survive against monsters that come out at night. While there are other game modes available, such as creative mode and adventure mode, survival is the game's core gameplay mechanic.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "ROBLOX, on the other hand, is a platform that offers a wide range of different games and experiences. While there are some survival games available, there are also games focused on racing, role-playing, and even fashion design. This diversity of gameplay means that ROBLOX can appeal to a wider range of players than Minecraft.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "The graphics and overall style of the two games also differ significantly. Minecraft's graphics are simple and blocky, with a pixelated style that has become iconic. The game's world is made up of cubes, and everything from trees to animals is made up of these same blocky shapes.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "ROBLOX, on the other hand, has a more varied style, with different games and experiences having their own unique graphics and art styles. While some games on the platform have simple graphics similar to Minecraft, others have more detailed 3D graphics that rival those of modern AAA games.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "Despite these differences, both Minecraft and ROBLOX have become incredibly popular with players of all ages. Minecraft's open-ended gameplay and simple graphics have made it particularly appealing to younger players, while ROBLOX's diversity of gameplay and community-driven nature have made it popular with players of all ages.", "type": "text"}]}, {"type": "image", "attrs": {"src": "https://asserts.gameseeks.com/images/news/131/75e1755703611fa020bf4130c6c0b937.jpg", "imageAlign": "center"}}, {"type": "paragraph", "content": [{"text": "Both games have also become platforms for creativity and community, with players using them to express their creativity and connect with others. Minecraft has spawned a massive community of content creators who make everything from mods to custom maps, while ROBLOX has become a hub for developers and game creators to share their work and collaborate with others.", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "In the end, the choice between Minecraft and ROBLOX comes down to personal preference. If you're looking for an open-ended sandbox game with almost unlimited creative freedom, then Minecraft is the game for you. If you're looking for a platform with a wide range of different games and experiences,ROBLOX is even better for you!", "type": "text"}]}]}
 
-const adConf: AdConfig = {
-  adm: ['banner-1'],
-  ads: ['123'],
-  loc: [2],
-}
-
-const pubid: PubId = {
-  adm: 'demo-adm-publisher',
-  ads: 'demo-ads-publisher',
-}
+const customSlots: CustomSlot[] = [
+  {
+    id: 'demo-promo',
+    location: 5,
+    content: <aside className="demo-custom-slot">Custom slot before item 5</aside>,
+  },
+]
 
 export default function App() {
   const [strict, setStrict] = useState(false)
@@ -482,8 +478,7 @@ export default function App() {
             <ArticleContentRenderer
               document={article}
               strict={strict}
-              adConf={adConf}
-              pubid={pubid}
+              customSlots={customSlots}
               resolveArticleButtonLink={resolveArticleButtonLink}
               onArticleButtonClick={handleArticleButtonClick}
               onRenderError={handleRenderError}

@@ -1,27 +1,18 @@
 import type { ReactElement } from 'react'
 import type {
   ArticleButtonClickPayload,
+  CustomSlot,
   RenderIssue,
   ResolveArticleButtonLink,
   ValidationResult,
 } from '../types.js'
 
 export interface RenderContext {
-  adSlots: readonly AdSlot[]
-  admPublisherId: string
-  adsPublisherId: string
-  adTitle: string
+  customSlots: readonly CustomSlot[]
   imageBaseUrl: string
   resolveArticleButtonLink?: ResolveArticleButtonLink
   emitArticleButtonClick: (payload: ArticleButtonClickPayload) => void
   reportIssue: (issue: RenderIssue) => void
-}
-
-export interface AdSlot {
-  index: number
-  location: number
-  adm: unknown
-  ads: unknown
 }
 
 export interface ProtocolAdapter {

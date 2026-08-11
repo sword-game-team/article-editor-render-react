@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 
-import { act, fireEvent, render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { StrictMode } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import ArticleContentRenderer, {
   type ArticleButtonClickPayload,
   type ArticleButtonNode,
   type ArticleDocument,
+  type CustomSlot,
   type RenderIssue,
 } from '../src'
 
@@ -99,268 +100,26 @@ const completeDocument: ArticleDocument = {
   ],
 }
 
-interface MockGoogleTagSlot {
-  addService: ReturnType<typeof vi.fn>
-}
-
-interface MockSlotRenderEndedEvent {
-  slot: MockGoogleTagSlot
-  isEmpty: boolean
-}
-
-function installGoogleTagMock() {
-  let slotRenderEnded: ((event: MockSlotRenderEndedEvent) => void) | undefined
-  const slot = {} as MockGoogleTagSlot
-  const pubAds = {
-    addEventListener: vi.fn(
-      (_eventName: string, listener: (event: MockSlotRenderEndedEvent) => void) => {
-        slotRenderEnded = listener
-      },
-    ),
-    removeEventListener: vi.fn(),
-  }
-  slot.addService = vi.fn(() => slot)
-
-  const googletag = {
-    cmd: {
-      push: vi.fn((callback: () => void) => {
-        callback()
-        return 1
-      }),
-    },
-    defineSlot: vi.fn(() => slot),
-    pubads: vi.fn(() => pubAds),
-    enableServices: vi.fn(),
-    display: vi.fn(),
-    destroySlots: vi.fn(() => true),
-  }
-
-  ;(window as Window & { googletag?: unknown }).googletag = googletag
-
-  return {
-    googletag,
-    slot,
-    emitSlotRenderEnded(isEmpty: boolean) {
-      slotRenderEnded?.({ slot, isEmpty })
-    },
-  }
-}
-
-beforeEach(() => {
-  vi.spyOn(console, 'log').mockImplementation(() => undefined)
-  vi.spyOn(console, 'error').mockImplementation(() => undefined)
-})
-
-afterEach(() => {
-  delete (window as Window & { googletag?: unknown }).googletag
-  delete (window as Window & { adsbygoogle?: unknown }).adsbygoogle
-  vi.restoreAllMocks()
-})
-
 describe('ArticleContentRenderer', () => {
-  it('receives and prints adConf and pubid', () => {
-    const adConf = {
-      adm: [{ id: 'adm-1' }],
-      ads: [{ id: 'ads-1' }],
-      loc: [1],
-    }
-    const pubid = { adm: 'publisher-adm', ads: 'publisher-ads' }
+  it('inserts multiple custom slots before one-based document positions', () => {
+    const customSlots: CustomSlot[] = [
+      {
+        id: 'promo',
+        location: 2,
+        content: <aside data-custom-slot="promo">Promo</aside>,
+      },
+      {
+        id: 'first-ad',
+        location: 2,
+        content: <div data-custom-slot="first-ad">First ad</div>,
+      },
+      {
+        id: 'second-ad',
+        location: 3,
+        content: <div data-custom-slot="second-ad">Second ad</div>,
+      },
+    ]
 
-    render(
-      <ArticleContentRenderer
-        document={{ type: 'doc', content: [] }}
-        adConf={adConf}
-        pubid={pubid}
-      />,
-    )
-
-    expect(console.log).toHaveBeenCalledWith('[ArticleContentRenderer] adConf:', adConf)
-    expect(console.log).toHaveBeenCalledWith('[ArticleContentRenderer] pubid:', pubid)
-  })
-
-  it('reports an error when adConf adm, ads, and loc arrays have different lengths', () => {
-    const onRenderError = vi.fn<(issue: RenderIssue) => void>()
-
-    render(
-      <ArticleContentRenderer
-        document={{ type: 'doc', content: [] }}
-        adConf={{ adm: ['adm-1', 'adm-2'], ads: ['ads-1'], loc: [2, 5] }}
-        pubid={{ adm: '', ads: '' }}
-        onRenderError={onRenderError}
-      />,
-    )
-
-    const issue = expect.objectContaining({
-      code: 'AD_CONFIG_LENGTH_MISMATCH',
-      path: '/adConf',
-    })
-    expect(onRenderError).toHaveBeenCalledWith(issue)
-    expect(console.error).toHaveBeenCalledWith(
-      '[ArticleContentRenderer] Invalid adConf:',
-      issue,
-    )
-  })
-
-  it('requires every non-empty ad array to match the loc length', () => {
-    const onRenderError = vi.fn<(issue: RenderIssue) => void>()
-    const { rerender } = render(
-      <ArticleContentRenderer
-        document={{ type: 'doc', content: [] }}
-        adConf={{ adm: ['adm-1'], ads: [], loc: [] }}
-        onRenderError={onRenderError}
-      />,
-    )
-
-    rerender(
-      <ArticleContentRenderer
-        document={{ type: 'doc', content: [] }}
-        adConf={{ adm: ['adm-1'], ads: ['ads-1'], loc: [1] }}
-        onRenderError={onRenderError}
-      />,
-    )
-
-    expect(
-      onRenderError.mock.calls.filter(([issue]) => issue.code === 'AD_CONFIG_LENGTH_MISMATCH'),
-    ).toHaveLength(1)
-  })
-
-  it('accepts either adm or ads by itself when its length matches loc', () => {
-    const onRenderError = vi.fn<(issue: RenderIssue) => void>()
-    const document = {
-      type: 'doc',
-      content: [
-        { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
-        { type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
-      ],
-    }
-    const { container, rerender } = render(
-      <ArticleContentRenderer
-        document={document}
-        adConf={{ adm: ['banner-1'], loc: [2] }}
-        onRenderError={onRenderError}
-      />,
-    )
-
-    let slot = container.querySelector<HTMLElement>('.acp-ad-slot')
-    expect(slot?.dataset).toMatchObject({ adm: 'banner-1', adLocation: '2' })
-    expect(slot?.hasAttribute('data-ads')).toBe(false)
-
-    rerender(
-      <ArticleContentRenderer
-        document={document}
-        adConf={{ ads: ['123'], loc: [2] }}
-        onRenderError={onRenderError}
-      />,
-    )
-
-    slot = container.querySelector<HTMLElement>('.acp-ad-slot')
-    expect(slot?.dataset).toMatchObject({ ads: '123', adLocation: '2' })
-    expect(slot?.hasAttribute('data-adm')).toBe(false)
-    expect(onRenderError).not.toHaveBeenCalled()
-  })
-
-  it('renders Google AdSense using pubid.ads and the matching adConf.ads unit id', () => {
-    const customStyles = document.createElement('style')
-    customStyles.textContent = '.article-ad-wrapper { height: 100px; }'
-    document.head.appendChild(customStyles)
-
-    const { container } = render(
-      <ArticleContentRenderer
-        document={{
-          type: 'doc',
-          content: [
-            { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
-          ],
-        }}
-        adConf={{ ads: ['123'], loc: [2] }}
-        pubid={{ adm: '', ads: '3887371527059481' }}
-        adTitle="Sponsored"
-      />,
-    )
-
-    const slot = container.querySelector<HTMLElement>('.acp-ad-slot')
-    const wrapper = slot?.querySelector<HTMLElement>('.article-ad-wrapper')
-    const ad = slot?.querySelector<HTMLElement>('ins.adsbygoogle')
-
-    expect(slot?.dataset.ads).toBe('123')
-    expect(window.getComputedStyle(wrapper as HTMLElement).height).toBe('100px')
-    expect(wrapper?.querySelector('.article-ad-title')?.textContent).toBe('Sponsored')
-    expect(ad?.classList.contains('article-ad-unit')).toBe(true)
-    expect(ad?.dataset.adClient).toBe('ca-pub-3887371527059481')
-    expect(ad?.dataset.adSlot).toBe('123')
-    expect(ad?.style.width).toBe('100%')
-    expect(ad?.style.height).toBe('')
-    expect(slot?.nextElementSibling?.textContent).toBe('Second')
-
-    customStyles.remove()
-  })
-
-  it('prioritizes ADM and falls back to AdSense when that ADM slot is empty', () => {
-    const { googletag, emitSlotRenderEnded } = installGoogleTagMock()
-    const customStyles = document.createElement('style')
-    customStyles.textContent = '.article-ad-wrapper { height: 120px; }'
-    document.head.appendChild(customStyles)
-
-    const { container } = render(
-      <ArticleContentRenderer
-        document={{
-          type: 'doc',
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Content' }] }],
-        }}
-        adConf={{ adm: ['native-1'], ads: ['123'], loc: [1] }}
-        pubid={{ adm: '/23054585162/newsflowly/', ads: '3887371527059481' }}
-      />,
-    )
-
-    const admWrapper = container.querySelector<HTMLElement>('.article-adm-wrapper')
-    expect(window.getComputedStyle(admWrapper as HTMLElement).height).toBe('120px')
-    expect(admWrapper?.querySelector('.article-ad-title')?.textContent).toBe('Advertisement')
-    expect(container.querySelector('.article-adm-unit')?.id).toBe('native-1')
-    expect(container.querySelector('ins.adsbygoogle')).toBeNull()
-    expect(googletag.defineSlot).toHaveBeenCalledWith(
-      '/23054585162/newsflowly/native-1',
-      'fluid',
-      'native-1',
-    )
-    expect(googletag.display).toHaveBeenCalledWith('native-1')
-
-    act(() => emitSlotRenderEnded(false))
-    expect(container.querySelector('.article-adm-wrapper')).not.toBeNull()
-    expect(container.querySelector('ins.adsbygoogle')).toBeNull()
-
-    act(() => emitSlotRenderEnded(true))
-
-    const ads = container.querySelector<HTMLElement>('ins.adsbygoogle')
-    expect(container.querySelector('.article-adm-wrapper')).toBeNull()
-    expect(container.querySelector('.article-ad-title')?.textContent).toBe('Advertisement')
-    expect(ads?.dataset.adClient).toBe('ca-pub-3887371527059481')
-    expect(ads?.dataset.adSlot).toBe('123')
-
-    customStyles.remove()
-  })
-
-  it('does not request AdSense when an ADM-only slot is empty', () => {
-    const { emitSlotRenderEnded } = installGoogleTagMock()
-    const { container } = render(
-      <ArticleContentRenderer
-        document={{
-          type: 'doc',
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Content' }] }],
-        }}
-        adConf={{ adm: ['native-only'], loc: [1] }}
-        pubid={{ adm: '/23054585162/newsflowly/', ads: '3887371527059481' }}
-      />,
-    )
-
-    act(() => emitSlotRenderEnded(true))
-
-    expect(container.querySelector('.article-adm-wrapper')).not.toBeNull()
-    expect(container.querySelector('ins.adsbygoogle')).toBeNull()
-    expect((window as Window & { adsbygoogle?: unknown }).adsbygoogle).toBeUndefined()
-  })
-
-  it('inserts ad placeholders before one-based document positions', () => {
     const { container } = render(
       <ArticleContentRenderer
         document={{
@@ -369,78 +128,60 @@ describe('ArticleContentRenderer', () => {
             { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
             { type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
             { type: 'paragraph', content: [{ type: 'text', text: 'Third' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Fourth' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Fifth' }] },
           ],
         }}
-        adConf={{
-          adm: ['banner-1', 'banner-2'],
-          ads: ['123', '456'],
-          loc: [2, 5],
-        }}
+        customSlots={customSlots}
       />,
     )
 
-    const slots = container.querySelectorAll<HTMLElement>('.acp-ad-slot')
-    expect(slots).toHaveLength(2)
-    expect(slots[0]?.dataset).toMatchObject({
-      adSlot: 'true',
-      adIndex: '1',
-      adLocation: '2',
-      adm: 'banner-1',
-      ads: '123',
-    })
-    expect(slots[0]?.nextElementSibling?.textContent).toBe('Second')
-    expect(slots[1]?.dataset).toMatchObject({
-      adSlot: 'true',
-      adIndex: '2',
-      adLocation: '5',
-      adm: 'banner-2',
-      ads: '456',
-    })
-    expect(slots[1]?.nextElementSibling?.textContent).toBe('Fifth')
+    const slots = container.querySelectorAll<HTMLElement>('[data-custom-slot]')
+    expect(Array.from(slots, (slot) => slot.dataset.customSlot)).toEqual([
+      'promo',
+      'first-ad',
+      'second-ad',
+    ])
+    expect(slots[1]?.nextElementSibling?.textContent).toBe('Second')
+    expect(slots[2]?.nextElementSibling?.textContent).toBe('Third')
   })
 
-  it('ignores an ad location when the corresponding document element does not exist', () => {
+  it('renders interactive React content inside a custom slot', () => {
+    const onClick = vi.fn()
+    const { getByRole } = render(
+      <ArticleContentRenderer
+        document={{
+          type: 'doc',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Content' }] }],
+        }}
+        customSlots={[
+          {
+            id: 'interactive',
+            location: 1,
+            content: <button onClick={onClick}>Custom action</button>,
+          },
+        ]}
+      />,
+    )
+
+    fireEvent.click(getByRole('button', { name: 'Custom action' }))
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+
+  it('ignores invalid or out-of-range custom slot locations', () => {
     const { container } = render(
       <ArticleContentRenderer
         document={{
           type: 'doc',
-          content: [
-            { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Third' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Fourth' }] },
-          ],
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Content' }] }],
         }}
-        adConf={{
-          adm: ['banner-1', 'banner-2'],
-          ads: ['123', '456'],
-          loc: [2, 5],
-        }}
+        customSlots={[
+          { id: 'zero', location: 0, content: <div data-custom-slot="zero" /> },
+          { id: 'fraction', location: 1.5, content: <div data-custom-slot="fraction" /> },
+          { id: 'missing', location: 2, content: <div data-custom-slot="missing" /> },
+        ]}
       />,
     )
 
-    const slots = container.querySelectorAll<HTMLElement>('.acp-ad-slot')
-    expect(slots).toHaveLength(1)
-    expect(slots[0]?.dataset.adLocation).toBe('2')
-  })
-
-  it('does not insert ad placeholders when adConf lengths do not match', () => {
-    const { container } = render(
-      <ArticleContentRenderer
-        document={{
-          type: 'doc',
-          content: [
-            { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
-          ],
-        }}
-        adConf={{ adm: ['banner-1'], loc: [1, 2] }}
-      />,
-    )
-
-    expect(container.querySelector('.acp-ad-slot')).toBeNull()
+    expect(container.querySelector('[data-custom-slot]')).toBeNull()
   })
 
   it('renders every v1 node family and nested marks as semantic elements', () => {
