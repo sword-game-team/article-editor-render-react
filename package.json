@@ -1,6 +1,6 @@
 {
   "name": "article-content-renderer-next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A safe React renderer for the Article Content Protocol ProseMirror JSON format.",
   "author": "NovaVoyager",
   "license": "MIT",
