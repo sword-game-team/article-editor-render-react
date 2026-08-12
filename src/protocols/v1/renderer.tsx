@@ -200,26 +200,50 @@ function renderArticleButton(
   context: RenderContext,
 ): ReactNode {
   const rawAttrs = recordValue(node.attrs)
+  const isActionStyle = rawAttrs.style === 'text' || rawAttrs.style === 'button'
+  const isLinkStyle = rawAttrs.style === 'link'
   if (
-    typeof rawAttrs.id !== 'string' ||
-    !rawAttrs.id ||
     typeof rawAttrs.text !== 'string' ||
     !rawAttrs.text ||
-    (rawAttrs.style !== 'text' && rawAttrs.style !== 'button')
+    (!isActionStyle && !isLinkStyle) ||
+    (isActionStyle && (typeof rawAttrs.id !== 'string' || !rawAttrs.id)) ||
+    (isLinkStyle &&
+      rawAttrs.id !== undefined &&
+      (typeof rawAttrs.id !== 'string' || !rawAttrs.id))
   ) {
     return null
   }
 
-  const attrs: Readonly<ArticleButtonAttrs> = Object.freeze({
-    id: rawAttrs.id,
-    ...(typeof rawAttrs.title === 'string' ? { title: rawAttrs.title } : {}),
-    text: rawAttrs.text,
-    style: rawAttrs.style,
-  })
-  const typedNode: Readonly<ArticleButtonNode> = Object.freeze({ type: 'articleButton', attrs })
+  const attrs: Readonly<ArticleButtonAttrs> = isLinkStyle
+    ? Object.freeze({
+        ...(typeof rawAttrs.id === 'string' ? { id: rawAttrs.id } : {}),
+        ...(typeof rawAttrs.title === 'string' ? { title: rawAttrs.title } : {}),
+        text: rawAttrs.text,
+        style: 'link' as const,
+        ...(typeof rawAttrs.href === 'string' ? { href: rawAttrs.href } : {}),
+      })
+    : Object.freeze({
+        id: rawAttrs.id as string,
+        ...(typeof rawAttrs.title === 'string' ? { title: rawAttrs.title } : {}),
+        text: rawAttrs.text,
+        style: rawAttrs.style as 'text' | 'button',
+      })
+  const typedNode = Object.freeze({ type: 'articleButton' as const, attrs }) as Readonly<ArticleButtonNode>
 
   let resolved: ReturnType<typeof normalizeArticleButtonLink> = null
-  if (!context.resolveArticleButtonLink) {
+  if (attrs.style === 'link') {
+    if (attrs.href !== undefined) {
+      resolved = normalizeArticleButtonLink(attrs.href)
+      if (!resolved) {
+        report(context, {
+          code: 'UNSAFE_URL',
+          path: `${path}/attrs/href`,
+          message: 'The articleButton link href is not a usable safe URL.',
+          nodeType: 'articleButton',
+        })
+      }
+    }
+  } else if (!context.resolveArticleButtonLink) {
     report(context, {
       code: 'LINK_RESOLUTION_FAILED',
       path,
@@ -228,7 +252,8 @@ function renderArticleButton(
     })
   } else {
     try {
-      const result = context.resolveArticleButtonLink(attrs, typedNode)
+      const actionNode = Object.freeze({ type: 'articleButton' as const, attrs })
+      const result = context.resolveArticleButtonLink(attrs, actionNode)
       resolved = normalizeArticleButtonLink(result)
       if (!resolved) {
         report(context, {

@@ -109,14 +109,16 @@
 }
 
 .acp-link,
-.acp-article-button--text {
+.acp-article-button--text,
+.acp-article-button--link {
   color: var(--acp-color-accent);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 
 .acp-link:hover,
-.acp-article-button--text:hover {
+.acp-article-button--text:hover,
+.acp-article-button--link:hover {
   color: var(--acp-color-accent-hover);
 }
 

@@ -457,18 +457,40 @@ class ProtocolV1Validator {
     this.checkProperties(
       attrs,
       childPath(path, 'attrs'),
-      ['id', 'title', 'text', 'style'],
-      ['id', 'text', 'style'],
+      ['id', 'title', 'text', 'style', 'href'],
+      ['text', 'style'],
       type,
     )
-    this.requireString(attrs.id, nestedPath(path, 'attrs', 'id'), type)
+    if (attrs.style === 'text' || attrs.style === 'button') {
+      if (!('id' in attrs)) {
+        this.add(
+          'MISSING_PROPERTY',
+          nestedPath(path, 'attrs', 'id'),
+          'Required property "id" is missing for an articleButton with text or button style.',
+          type,
+        )
+      } else {
+        this.requireString(attrs.id, nestedPath(path, 'attrs', 'id'), type)
+      }
+    } else {
+      this.optionalString(attrs.id, nestedPath(path, 'attrs', 'id'), type)
+    }
     this.optionalString(attrs.title, nestedPath(path, 'attrs', 'title'), type)
     this.requireString(attrs.text, nestedPath(path, 'attrs', 'text'), type)
-    if (attrs.style !== 'text' && attrs.style !== 'button') {
+    this.optionalString(attrs.href, nestedPath(path, 'attrs', 'href'), type)
+    if (attrs.style !== 'text' && attrs.style !== 'button' && attrs.style !== 'link') {
       this.add(
         'INVALID_VALUE',
         nestedPath(path, 'attrs', 'style'),
-        'Article button style must be "text" or "button".',
+        'Article button style must be "text", "button", or "link".',
+        type,
+      )
+    }
+    if (attrs.href !== undefined && attrs.style !== 'link') {
+      this.add(
+        'INVALID_VALUE',
+        nestedPath(path, 'attrs', 'href'),
+        'Article button href may only be present when style is "link".',
         type,
       )
     }

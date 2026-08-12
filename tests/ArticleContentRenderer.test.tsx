@@ -316,6 +316,75 @@ describe('ArticleContentRenderer', () => {
     expect(href).not.toContain('style=')
   })
 
+  it('renders a link articleButton from its own href without calling the resolver', () => {
+    const resolver = vi.fn(() => '/should-not-be-used')
+    const listener = vi.fn<(payload: ArticleButtonClickPayload) => void>((payload) =>
+      payload.event.preventDefault(),
+    )
+    const { container } = render(
+      <ArticleContentRenderer
+        document={{
+          type: 'doc',
+          content: [
+            {
+              type: 'articleButton',
+              attrs: {
+                text: 'Protocol link',
+                style: 'link',
+                href: '/docs/article-button-link#example',
+              },
+            },
+          ],
+        }}
+        resolveArticleButtonLink={resolver}
+        onArticleButtonClick={listener}
+      />,
+    )
+
+    const link = container.querySelector<HTMLAnchorElement>('.acp-article-button--link')
+    expect(link?.tagName).toBe('A')
+    expect(link?.getAttribute('href')).toBe('/docs/article-button-link#example')
+    expect(link?.hasAttribute('data-article-button-id')).toBe(false)
+    expect(resolver).not.toHaveBeenCalled()
+
+    fireEvent.click(link as HTMLAnchorElement)
+    expect(listener).toHaveBeenCalledOnce()
+    expect(listener.mock.calls[0]?.[0].attrs).toEqual({
+      text: 'Protocol link',
+      style: 'link',
+      href: '/docs/article-button-link#example',
+    })
+  })
+
+  it('disables link articleButtons with a missing or unsafe href', () => {
+    const onRenderError = vi.fn<(issue: RenderIssue) => void>()
+    const { container } = render(
+      <ArticleContentRenderer
+        document={{
+          type: 'doc',
+          content: [
+            { type: 'articleButton', attrs: { text: 'No href', style: 'link' } },
+            {
+              type: 'articleButton',
+              attrs: { text: 'Unsafe href', style: 'link', href: 'javascript:alert(1)' },
+            },
+          ],
+        }}
+        onRenderError={onRenderError}
+      />,
+    )
+
+    const links = container.querySelectorAll<HTMLAnchorElement>('.acp-article-button--link')
+    expect(links).toHaveLength(2)
+    expect(links[0]?.hasAttribute('href')).toBe(false)
+    expect(links[1]?.hasAttribute('href')).toBe(false)
+    expect(links[0]?.getAttribute('aria-disabled')).toBe('true')
+    expect(links[1]?.getAttribute('aria-disabled')).toBe('true')
+    expect(onRenderError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'UNSAFE_URL', path: '/content/1/attrs/href' }),
+    )
+  })
+
   it('skips unsafe URLs while preserving other valid content', () => {
     const onRenderError = vi.fn<(issue: RenderIssue) => void>()
     const { container } = render(

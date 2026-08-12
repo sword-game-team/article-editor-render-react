@@ -14,9 +14,13 @@ export {
 export { ARTICLE_CONTENT_PROTOCOL_V1 } from './protocols/v1/metadata.js'
 export type {
   ArticleButtonAttrs,
+  ArticleButtonActionAttrs,
+  ArticleButtonActionNode,
   ArticleButtonClickPayload,
   ArticleButtonLink,
+  ArticleButtonLinkAttrs,
   ArticleButtonLinkDescriptor,
+  ArticleButtonLinkNode,
   ArticleButtonNode,
   ArticleButtonStyle,
   ArticleContentNode,

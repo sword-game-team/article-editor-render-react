@@ -93,6 +93,45 @@ describe('validateArticleDocument', () => {
     )
   })
 
+  it('accepts link articleButtons with their own href and without a business id', () => {
+    const result = validateArticleDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'articleButton',
+          attrs: { text: 'Read the guide', style: 'link', href: '/guides/getting-started' },
+        },
+        {
+          type: 'articleButton',
+          attrs: { text: 'Link without a destination', style: 'link' },
+        },
+      ],
+    })
+
+    expect(result).toEqual({ valid: true, issues: [] })
+  })
+
+  it('enforces the conditional articleButton id and href rules', () => {
+    const result = validateArticleDocument({
+      type: 'doc',
+      content: [
+        { type: 'articleButton', attrs: { text: 'Missing id', style: 'button' } },
+        {
+          type: 'articleButton',
+          attrs: { id: 'unexpected-href', text: 'Unexpected href', style: 'text', href: '/bad' },
+        },
+      ],
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'MISSING_PROPERTY', path: '/content/0/attrs/id' }),
+        expect.objectContaining({ code: 'INVALID_VALUE', path: '/content/1/attrs/href' }),
+      ]),
+    )
+  })
+
   it('rejects an unsupported protocol version', () => {
     const result = validateArticleDocument(
       { type: 'doc', content: [] },

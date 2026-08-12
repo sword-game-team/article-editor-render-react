@@ -4,7 +4,7 @@ export type ProtocolVersion = 1
 
 export type TextAlign = 'left' | 'center' | 'right' | 'justify'
 export type ImageAlign = 'left' | 'center' | 'right'
-export type ArticleButtonStyle = 'text' | 'button'
+export type ArticleButtonStyle = 'text' | 'button' | 'link'
 export type LinkTarget = '_blank' | '_self'
 
 export interface CustomSlot {
@@ -124,17 +124,36 @@ export interface ImageNode {
   }
 }
 
-export interface ArticleButtonAttrs {
-  id: string
+interface ArticleButtonBaseAttrs {
   title?: string
   text: string
-  style: ArticleButtonStyle
 }
 
-export interface ArticleButtonNode {
-  type: 'articleButton'
-  attrs: ArticleButtonAttrs
+export interface ArticleButtonActionAttrs extends ArticleButtonBaseAttrs {
+  id: string
+  style: 'text' | 'button'
+  href?: never
 }
+
+export interface ArticleButtonLinkAttrs extends ArticleButtonBaseAttrs {
+  id?: string
+  style: 'link'
+  href?: string
+}
+
+export type ArticleButtonAttrs = ArticleButtonActionAttrs | ArticleButtonLinkAttrs
+
+export interface ArticleButtonActionNode {
+  type: 'articleButton'
+  attrs: ArticleButtonActionAttrs
+}
+
+export interface ArticleButtonLinkNode {
+  type: 'articleButton'
+  attrs: ArticleButtonLinkAttrs
+}
+
+export type ArticleButtonNode = ArticleButtonActionNode | ArticleButtonLinkNode
 
 export interface TableNode {
   type: 'table'
@@ -185,8 +204,8 @@ export interface ArticleButtonLinkDescriptor {
 export type ArticleButtonLink = string | ArticleButtonLinkDescriptor | null
 
 export type ResolveArticleButtonLink = (
-  attrs: Readonly<ArticleButtonAttrs>,
-  node: Readonly<ArticleButtonNode>,
+  attrs: Readonly<ArticleButtonActionAttrs>,
+  node: Readonly<ArticleButtonActionNode>,
 ) => ArticleButtonLink
 
 export type RenderIssueCode =

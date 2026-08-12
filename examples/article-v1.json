@@ -90,6 +90,15 @@
       }
     },
     {
+      "type": "articleButton",
+      "attrs": {
+        "title": "Open protocol documentation",
+        "text": "Read protocol documentation",
+        "style": "link",
+        "href": "/docs/article-content-protocol"
+      }
+    },
+    {
       "type": "table",
       "content": [
         {
@@ -120,4 +129,3 @@
     { "type": "horizontalRule" }
   ]
 }
-

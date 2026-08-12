@@ -11,8 +11,9 @@
 - 不使用 `dangerouslySetInnerHTML`
 - 支持严格模式和非严格容错渲染
 - 拦截危险链接和图片 URL
-- `articleButton` 的完整 `href` 由使用者回调生成
-- button/text 两种 `articleButton` 样式均使用 `<a>` 渲染
+- `articleButton` 的 text/button 完整 `href` 由使用者回调生成
+- `articleButton` 的 link 样式直接使用协议节点中的 `href`
+- text/button/link 三种 `articleButton` 样式均使用 `<a>` 渲染
 - 支持 React SSR
 - 提供 TypeScript 类型、结构化错误和 CSS Variables
 - React 和 React DOM 作为 peer dependencies，不会打入组件包
@@ -163,23 +164,39 @@ const customSlots: CustomSlot[] = [
 ```
 ## articleButton 链接
 
-`style: "button"` 和 `style: "text"` 都使用 `<a>` 渲染，只改变视觉样式。resolver 会收到当前节点的完整只读属性：
+`style: "button"`、`style: "text"` 和 `style: "link"` 都使用 `<a>` 渲染。它们的链接来源不同：
+
+- text/button：必须提供 `id`，通过 `resolveArticleButtonLink` 生成完整 `href`。
+- link：`id` 可省略，直接使用节点的 `href`，不会调用 `resolveArticleButtonLink`。
+
+对应的 TypeScript 类型是可辨识联合：
 
 ```ts
-interface ArticleButtonAttrs {
+interface ArticleButtonActionAttrs {
   id: string
   title?: string
   text: string
   style: 'text' | 'button'
+  href?: never
 }
+
+interface ArticleButtonLinkAttrs {
+  id?: string
+  title?: string
+  text: string
+  style: 'link'
+  href?: string
+}
+
+type ArticleButtonAttrs = ArticleButtonActionAttrs | ArticleButtonLinkAttrs
 ```
 
-resolver 类型：
+resolver 只处理 text/button 节点，因此回调中的 `attrs.id` 始终是 `string`：
 
 ```ts
 type ResolveArticleButtonLink = (
-  attrs: Readonly<ArticleButtonAttrs>,
-  node: Readonly<ArticleButtonNode>,
+  attrs: Readonly<ArticleButtonActionAttrs>,
+  node: Readonly<ArticleButtonActionNode>,
 ) =>
   | string
   | {
@@ -207,6 +224,34 @@ const resolveArticleButtonLink: ResolveArticleButtonLink = (attrs) => {
 组件不会自动添加 `?`，也不会自动把 `id`、`title`、`text` 或 `style` 转换成查询参数。resolver 返回的安全字符串就是最终 `href`。
 
 resolver 必须是同步函数；建议保持它纯净、确定，不要在 resolver 中修改 React state 或执行异步请求。
+
+### link 样式直接使用 href
+
+link 类型的地址完整写在协议节点里，渲染器不会调用 resolver，也不会改写或追加参数：
+
+```ts
+const article: ArticleDocument = {
+  type: 'doc',
+  content: [
+    {
+      type: 'articleButton',
+      attrs: {
+        text: '查看协议说明',
+        style: 'link',
+        href: '/docs/article-content-protocol#article-button',
+      },
+    },
+  ],
+}
+```
+
+上面的节点会渲染为：
+
+```html
+<a href="/docs/article-content-protocol#article-button">查看协议说明</a>
+```
+
+协议允许 link 类型省略 `href`；这时组件会保留 `<a>` 语义并渲染为禁用态，不设置 `href`。如果 `href` 使用 `javascript:`、`data:` 等不安全协议，也会被拦截并通过 `onRenderError` 报告 `UNSAFE_URL`。
 
 ### 使用闭包
 
@@ -295,8 +340,8 @@ function ArticlePage() {
 | `strict` | `boolean` | `false` | 校验失败时是否停止整篇正文渲染 |
 | `customSlots` | `readonly CustomSlot[]` | `[]` | 在指定的顶层正文节点前插入一个或多个 React 内容 |
 | `imageBaseUrl` | `string` | `"https://www.doitme.link/"` | 替换文档图片中默认的 `https://www.doitme.link/` 地址前缀 |
-| `resolveArticleButtonLink` | `ResolveArticleButtonLink` | `undefined` | 生成 `articleButton` 完整安全链接 |
-| `onArticleButtonClick` | `(payload) => void` | `undefined` | 点击 button/text 形式的 `articleButton` 时调用 |
+| `resolveArticleButtonLink` | `ResolveArticleButtonLink` | `undefined` | 为 text/button 类型生成完整安全链接；link 类型不调用 |
+| `onArticleButtonClick` | `(payload) => void` | `undefined` | 点击任意类型的 `articleButton` 时调用 |
 | `onRenderError` | `(issue) => void` | `undefined` | 协议或运行时渲染问题回调 |
 
 ## onArticleButtonClick
@@ -312,7 +357,7 @@ interface ArticleButtonClickPayload {
 
 回调在原生跳转前同步调用。执行 `payload.event.preventDefault()` 可以阻止原生跳转并交给 React Router 或其他业务逻辑处理。
 
-如果 resolver 缺失、抛出异常、返回 `null` 或返回不安全 URL，组件仍渲染禁用状态的 `<a>`，但不设置 `href`，点击时会自动阻止默认行为。
+对于 text/button，如果 resolver 缺失、抛出异常、返回 `null` 或返回不安全 URL，组件仍渲染禁用状态的 `<a>`。对于 link，省略 `href` 或提供不安全 URL 时同样渲染禁用态。禁用态不设置 `href`，点击时会自动阻止默认行为。
 
 ## onRenderError
 

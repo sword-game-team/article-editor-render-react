@@ -257,14 +257,14 @@
     {
       "type": "articleButton",
       "kind": "block",
-      "description": "An article action button identified by a business id and displayed with its text.",
+      "description": "An article action displayed with its text. Link actions may omit the business id.",
       "contentModel": "none",
       "attributes": [
         {
           "name": "id",
           "type": "string",
-          "required": true,
-          "description": "Business identifier used by the consuming application to handle the action."
+          "required": false,
+          "description": "Business identifier used by the consuming application. Required for text and button styles; optional for link style."
         },
         {
           "name": "title",
@@ -282,21 +282,45 @@
           "name": "style",
           "type": "string",
           "required": true,
-          "description": "Controlled visual variant: text is rendered as a text-like action; button as a button-like action.",
+          "description": "Controlled variant: text is a text-like action, button is a button-like action, and link is a hyperlink action.",
           "allowedValues": [
             "text",
-            "button"
+            "button",
+            "link"
           ]
+        },
+        {
+          "name": "href",
+          "type": "string",
+          "required": false,
+          "description": "Optional link destination. This attribute may only be present when style is link."
+        }
+      ],
+      "constraints": [
+        {
+          "name": "link-style-href",
+          "description": "The optional href attribute may only be present when style is link."
+        },
+        {
+          "name": "non-link-style-id",
+          "description": "The id attribute is required when style is text or button, and optional when style is link."
         }
       ],
       "render": {
         "mode": "element",
         "element": "button",
         "textBinding": "text",
+        "elementVariants": {
+          "attribute": "style",
+          "values": {
+            "link": "a"
+          }
+        },
         "attributeBindings": {
           "id": "data-article-button-id",
           "title": "title",
-          "style": "data-article-button-style"
+          "style": "data-article-button-style",
+          "href": "href"
         }
       }
     },
@@ -404,7 +428,7 @@
           "name": "href",
           "type": "string",
           "required": true,
-          "description": "Link destination."
+          "description": "Non-empty URI reference; fragment-only links such as # are valid."
         },
         {
           "name": "target",
@@ -753,7 +777,6 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "id",
               "text",
               "style"
             ],
@@ -773,10 +796,57 @@
               "style": {
                 "enum": [
                   "text",
-                  "button"
+                  "button",
+                  "link"
                 ]
+              },
+              "href": {
+                "type": "string",
+                "minLength": 1
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "style": {
+                      "enum": [
+                        "text",
+                        "button"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "style"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "id": {}
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "href": {}
+                  },
+                  "required": [
+                    "href"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "style": {
+                      "const": "link"
+                    }
+                  }
+                }
+              }
+            ]
           }
         }
       },
@@ -918,7 +988,8 @@
                 "properties": {
                   "href": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "Non-empty URI reference; fragment-only links such as # are valid."
                   },
                   "target": {
                     "enum": [
@@ -935,5 +1006,3 @@
     }
   }
 }
-
-
